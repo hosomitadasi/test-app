@@ -1,0 +1,514 @@
+/* ==========================================================================
+   軽く押す練習 - スタイル
+   高齢者・スマートフォン利用を前提に、文字とボタンを大きく、余計な装飾を省く。
+   ========================================================================== */
+
+:root {
+    --bg: #f7f4ec;          /* 目に優しい生成り色 */
+    --text: #1a1a1a;        /* 十分なコントラスト */
+    --primary: #1565c0;     /* 「進む」操作の色 */
+    --primary-dark: #0d47a1;
+    --quiet: #ffffff;       /* 「やめる」操作は白 + 枠線で控えめに */
+    --quiet-border: #6b6b6b;
+    --target: #e65100;      /* アイコンの色（背景と強く区別できる橙） */
+    --target-dark: #bf360c;
+    --decoy: #546e7a;       /* 操作してはいけないアイコン（橙と混同しない青灰色） */
+    --decoy-dark: #263238;
+    --alert: #c62828;       /* 残りわずかの時間表示 */
+    --frame-outside: #e6e1d5;  /* 枠の外側（画面が枠より広いときに見える部分） */
+    --link: #0d47a1;        /* メニューの練習リンク */
+
+    /* Android 端末を想定した基準サイズ */
+    --frame-width: 700px;
+    --frame-height: 840px;
+
+    /* iPhone のノッチ／ホームバーを避けるための余白 */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;               /* 画面全体はスクロールさせない */
+    overscroll-behavior: none;      /* 引っ張って更新されるのを防ぐ */
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--frame-outside);
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 20px;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;     /* ダブルタップ拡大を無効化し、反応を速くする */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* ---------- 画面の切り替え ---------- */
+
+/* ---------- 端末を想定した枠 ---------- */
+
+/* 700x840px を基準とし、これより狭い環境では画面いっぱいまで縮める */
+.app-frame {
+    position: relative;
+    width: var(--frame-width);
+    height: var(--frame-height);
+    max-width: 100vw;
+    max-height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    padding: calc(var(--safe-top) + 16px) 20px calc(var(--safe-bottom) + 16px);
+}
+
+.screen--center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;  /* ボタンは画面中央付近に配置する */
+    text-align: center;
+    gap: 8px;
+}
+
+/* 一時停止画面は練習画面を覆い隠す（背後のアイコンを誤って押させない） */
+.screen--overlay {
+    background: var(--bg);
+    z-index: 10;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+/* 画面が出た直後の誤操作よけ。指が残っていてもボタンが反応しない。 */
+.is-guarded,
+.is-guarded * {
+    pointer-events: none !important;
+}
+
+/* ---------- 文字 ---------- */
+
+.title {
+    margin: 0 0 8px;
+    font-size: 40px;
+    font-weight: 700;
+}
+
+.lead {
+    margin: 0 0 32px;
+    font-size: 26px;
+}
+
+.result-score {
+    margin: 8px 0 40px;
+    font-size: 72px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-dark);
+}
+
+/* ---------- ボタン ---------- */
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 88px;               /* 指で押しやすい大きさを確保 */
+    padding: 0 24px;
+    border-radius: 16px;
+    border: 3px solid transparent;
+    font-family: inherit;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+    touch-action: manipulation;
+    text-align: center;
+    text-decoration: none;   /* a タグをボタンとして使う場合に下線を出さない */
+}
+
+.btn:active {
+    transform: scale(0.97);         /* 押したことがすぐ分かるように */
+}
+
+.btn--primary {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    color: #fff;
+}
+
+.btn--quiet {
+    background: var(--quiet);
+    border-color: var(--quiet-border);
+    color: var(--text);
+}
+
+/* 縦並び（開始画面・一時停止画面）: 誤操作しないよう間隔を広く取る */
+.button-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    width: 100%;
+    max-width: 420px;
+}
+
+/* 結果画面で「練習を選び直す」を横並びボタンの下に添えるとき */
+.button-stack--tight {
+    gap: 16px;
+    margin-top: 20px;
+    max-width: 460px;
+}
+
+/* 横並び（結果画面） */
+.button-row {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 460px;
+}
+
+.button-row .btn {
+    flex: 1 1 0;
+    font-size: 28px;
+}
+
+/* ---------- 練習画面 ---------- */
+
+.screen--play {
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--safe-top) + 12px) 16px calc(var(--safe-bottom) + 12px);
+}
+
+.play-header {
+    flex: 0 0 auto;
+}
+
+.btn--pause {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    background: var(--quiet);
+    border-color: var(--quiet-border);
+    color: var(--text);
+}
+
+.status {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 12px;
+}
+
+.status__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 150px;
+}
+
+.status__label {
+    font-size: 20px;
+}
+
+.status__value {
+    font-size: 40px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;  /* 数字幅を固定して表示のブレを防ぐ */
+}
+
+.status__value.is-alert {
+    color: var(--alert);
+}
+
+/* アイコンの出現領域。上端をヘッダーのすぐ下ではなく画面中央に置くことで
+   「画面中央から下部」という仕様を満たす。 */
+.play-field {
+    position: relative;
+    flex: 1 1 auto;
+    margin-top: 12px;
+}
+
+/* ---------- アイコン ---------- */
+
+.target {
+    position: absolute;
+    width: 112px;                   /* 高齢者でも狙いやすい大きさ */
+    height: 112px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff9800, var(--target) 60%, var(--target-dark));
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    /* なぞる・はらう の操作をブラウザのスクロール判定に横取りさせない */
+    touch-action: none;
+    animation: target-in 160ms ease-out;
+}
+
+/* 出現時にふわっと出す（急に現れて見失うのを防ぐ） */
+@keyframes target-in {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+/* 押した瞬間の反応。押せたことをはっきり伝える */
+.target.is-tapped {
+    animation: target-out 140ms ease-in forwards;
+}
+
+@keyframes target-out {
+    to { transform: scale(1.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .target,
+    .target.is-tapped {
+        animation-duration: 1ms;
+    }
+}
+
+/* ---------- メニュー画面 ---------- */
+
+/* 上（戻る）・中央（練習の一覧）・下（他の練習へ）の3段に分ける */
+.screen--menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    gap: 16px;
+}
+
+.menu-top,
+.menu-bottom {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+}
+
+.menu-top .btn,
+.menu-bottom .btn {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+}
+
+.menu-bottom .btn {
+    font-size: 28px;
+}
+
+.menu-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 auto;
+}
+
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+}
+
+/* 練習名は下線なしのリンクとして見せる（遷移先は後日設定する） */
+.menu-list__item {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--link);
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.menu-list__item:active {
+    opacity: 0.6;
+}
+
+/* ---------- 画面が小さい端末への調整 ---------- */
+
+@media (max-height: 640px) {
+    .title { font-size: 32px; }
+    .lead { font-size: 22px; margin-bottom: 24px; }
+    .btn { min-height: 76px; font-size: 28px; }
+    .button-stack { gap: 24px; }
+    .result-score { font-size: 60px; }
+    .status__value { font-size: 34px; }
+    .menu-list__item { font-size: 26px; }
+    .menu-list { gap: 18px; }
+    .menu-bottom .btn { font-size: 24px; }
+}
+
+/* ---------- 練習の種類ごとのアイコン ---------- */
+
+.target {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 難易度「むずかしい」で出す、操作してはいけないアイコン。
+   色と×印の2つで区別できるようにする（色だけに頼らない）。 */
+.target--decoy {
+    background: radial-gradient(circle at 35% 30%, #9e9e9e, var(--decoy) 60%, var(--decoy-dark));
+}
+
+/* ×はやじるしと重ならないよう、右上のバッジとして出す */
+.target--decoy::after {
+    content: "×";
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    background: var(--alert);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    pointer-events: none;
+}
+
+/* なぞる・はらう のやじるし。頭の向きへ操作してもらう。 */
+.target__arrow {
+    display: block;
+    width: 0;
+    height: 0;
+    border-left: 26px solid transparent;
+    border-right: 26px solid transparent;
+    border-bottom: 40px solid #fff;
+    pointer-events: none;    /* 判定はアイコン本体で受け取る */
+}
+
+.is-dir-up .target__arrow    { transform: rotate(0deg); }
+.is-dir-right .target__arrow { transform: rotate(90deg); }
+.is-dir-down .target__arrow  { transform: rotate(180deg); }
+.is-dir-left .target__arrow  { transform: rotate(270deg); }
+
+/* 長く押している間の手ごたえ。1秒かけて輪が広がり、押し続ける時間を目で見て分かるようにする。 */
+.target.is-holding::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border: 6px solid var(--target-dark);
+    border-radius: 50%;
+    opacity: 0.9;
+    animation: hold-progress 1s linear forwards;
+    pointer-events: none;
+}
+
+@keyframes hold-progress {
+    from { transform: scale(0.6); opacity: 0.2; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .target.is-holding::before { animation-duration: 1ms; }
+}
+
+/* ---------- 説明文・見出しの補助 ---------- */
+
+.title--small {
+    font-size: 30px;
+    margin-bottom: 16px;
+}
+
+/* 難易度ごとの進め方の説明。本文より一段控えめに見せる。 */
+.lead--note {
+    font-size: 22px;
+    margin-bottom: 24px;
+}
+
+/* ---------- 横向き（画面を回転させたとき）の調整 ---------- */
+
+/* 端末を横に持つと高さが足りず、枠からボタンがはみ出すため、
+   文字とボタンを小さくして枠の中に収める。 */
+@media (orientation: landscape) and (max-height: 520px) {
+    :root { --frame-height: 100vh; }
+
+    /* それでも収まらないほど高さが足りない端末では、枠を切らずに縦スクロールで届くようにする */
+    .screen--center,
+    .screen--menu {
+        justify-content: flex-start;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .title { font-size: 26px; margin-bottom: 4px; }
+    .title--small { font-size: 22px; margin-bottom: 8px; }
+    .lead { font-size: 18px; margin-bottom: 12px; }
+    .lead--note { font-size: 16px; margin-bottom: 12px; }
+    .result-score { font-size: 40px; margin: 4px 0 16px; }
+
+    .btn { min-height: 56px; font-size: 22px; border-radius: 12px; }
+    .button-row .btn { font-size: 20px; }
+    .menu-bottom .btn { font-size: 20px; }
+    .button-stack { gap: 12px; }
+    .button-stack--tight { gap: 8px; margin-top: 10px; }
+    .screen--menu { gap: 8px; }
+
+    .menu-list { gap: 10px; }
+    .menu-list__item { font-size: 22px; padding: 6px 12px; }
+
+    .status { margin-top: 6px; gap: 16px; }
+    .status__label { font-size: 15px; }
+    .status__value { font-size: 26px; }
+
+    /* 高さが足りない分、アイコンも小さくして枠の外へはみ出さないようにする */
+    .target { width: 84px; height: 84px; }
+    .target--decoy::after { width: 36px; height: 36px; font-size: 24px; }
+    .target__arrow {
+        border-left-width: 20px;
+        border-right-width: 20px;
+        border-bottom-width: 30px;
+    }
+}
+
+/* 横向きでとくに高さが足りない端末（およそ400px未満）のさらなる調整 */
+@media (orientation: landscape) and (max-height: 400px) {
+    .btn { min-height: 48px; font-size: 19px; }
+    .button-stack { gap: 8px; }
+    .title { font-size: 22px; }
+    .lead, .lead--note { font-size: 15px; margin-bottom: 8px; }
+    .target { width: 64px; height: 64px; }
+    .target--decoy::after { width: 30px; height: 30px; font-size: 20px; border-width: 2px; }
+    .target__arrow {
+        border-left-width: 15px;
+        border-right-width: 15px;
+        border-bottom-width: 23px;
+    }
+}
+
+/* ---------- 幅の狭い端末への調整 ---------- */
+
+/* 320px 程度の端末でも、押す場所が小さくなりすぎないようにする */
+@media (max-width: 360px) {
+    .menu-list__item { padding: 6px 12px; min-height: 48px; display: flex; align-items: center; }
+    .title { font-size: 30px; }
+    .btn { font-size: 26px; padding: 0 12px; }
+    .menu-bottom .btn { font-size: 20px; }
+}
