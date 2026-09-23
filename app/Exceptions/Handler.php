@@ -2,7 +2,10 @@
 
 namespace App\Exceptions;
 
+use App\Support\AuthMessages;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -25,6 +28,16 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        // 自動ログアウト（セッション切れ）のあとに画面から送信したときは、
+        // エラー画面ではなくトップ画面へ戻し、理由をダイアログで伝える。
+        $this->renderable(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() === 419 && !$request->expectsJson()) {
+                return redirect()->route('top')->with('dialog', AuthMessages::SESSION_EXPIRED);
+            }
+
+            return null;
         });
     }
 }

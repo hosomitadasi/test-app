@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * 練習アプリの画面を返すコントローラ。
@@ -95,25 +96,25 @@ class PracticeController extends Controller
     /**
      * メニュー画面（今日の練習）を表示する。
      */
-    public function menu(): View
+    public function menu(): Response
     {
-        return view('practice.menu');
+        return Inertia::render('Menu/Menu');
     }
 
     /**
      * 練習内容選択画面（画面操作／文字入力／電話）を表示する。
      */
-    public function contents(): View
+    public function contents(): Response
     {
-        return view('practice.contents');
+        return Inertia::render('Menu/Contents');
     }
 
     /**
      * 練習詳細選択画面（軽く押す／長く押す／なぞる／はらう）を表示する。
      */
-    public function details(): View
+    public function details(): Response
     {
-        return view('practice.details', [
+        return Inertia::render('Menu/Details', [
             'practices' => self::PRACTICES,
         ]);
     }
@@ -121,9 +122,9 @@ class PracticeController extends Controller
     /**
      * 練習難易度選択画面（やさしい／ふつう／むずかしい）を表示する。
      */
-    public function difficulty(string $type): View
+    public function difficulty(string $type): Response
     {
-        return view('practice.difficulty', [
+        return Inertia::render('Menu/Difficulty', [
             'type' => $type,
             'practice' => self::PRACTICES[$type],
             'levels' => self::LEVEL_SETTINGS,
@@ -133,12 +134,12 @@ class PracticeController extends Controller
     /**
      * 練習画面を表示する。種類と難易度の組み合わせで1つのビューを使い回す。
      */
-    public function play(string $type, string $level): View
+    public function play(string $type, string $level): Response
     {
         $practice = self::PRACTICES[$type];
         $setting = self::LEVEL_SETTINGS[$level];
 
-        return view('practice.play', [
+        return Inertia::render('Practice/Play', [
             'type' => $type,
             'level' => $level,
             'practice' => $practice,

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
@@ -9,6 +12,8 @@ use Tests\TestCase;
  */
 class TypingPracticeTest extends TestCase
 {
+    use RefreshDatabase;
+
     /** 難易度（URL の {level}）と画面に出す名前 */
     private const LEVELS = [
         'easy' => 'やさしい',
@@ -16,25 +21,37 @@ class TypingPracticeTest extends TestCase
         'hard' => 'むずかしい',
     ];
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 練習の画面は、ログインしている人だけが使える
+        $this->actingAs(User::factory()->create());
+    }
+
     /** 練習内容選択画面から難易度選択画面へ進めること */
     public function test_contents_links_to_the_difficulty_screen(): void
     {
-        $this->get(route('practice.contents'))
-            ->assertOk()
-            ->assertSee('href="'.route('practice.typing.difficulty').'"', false)
-            ->assertSee('文字入力の練習をする');
+        $this->get(route('practice.contents'))->assertOk();
+        $this->assertPageLinksTo('Menu/Contents', route('practice.typing.difficulty'));
+        $this->assertStringContainsString('文字入力の練習をする', $this->pageSource('Menu/Contents'));
     }
 
     /** 難易度選択画面から3つの難易度へ進めること */
     public function test_difficulty_screen_links_to_every_level(): void
     {
-        $difficulty = $this->get(route('practice.typing.difficulty'))
+        $this->get(route('practice.typing.difficulty'))
             ->assertOk()
-            ->assertSee('文字打ち練習');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Typing/Difficulty')
+                ->where('label', '文字打ち練習')
+                ->where('levels.easy.label', self::LEVELS['easy'])
+                ->where('levels.normal.label', self::LEVELS['normal'])
+                ->where('levels.hard.label', self::LEVELS['hard']));
 
-        foreach (self::LEVELS as $level => $label) {
-            $difficulty->assertSee('href="'.route('practice.typing.play', ['level' => $level]).'"', false);
-            $difficulty->assertSee($label);
+        $this->assertStringContainsString(':href="`/practice/typing/play/${level}`"', $this->pageSource('Typing/Difficulty'));
+        foreach (array_keys(self::LEVELS) as $level) {
+            $this->assertSame('/practice/typing/play/'.$level, parse_url(route('practice.typing.play', ['level' => $level]), PHP_URL_PATH));
         }
     }
 
@@ -42,23 +59,23 @@ class TypingPracticeTest extends TestCase
     public function test_back_links_point_to_the_expected_screen(): void
     {
         // 文字打ち練習は練習詳細画面を経由しないため、練習内容選択画面へ戻る
-        $this->get(route('practice.typing.difficulty'))
-            ->assertSee('href="'.route('practice.contents').'"', false);
+        $this->assertPageLinksTo('Typing/Difficulty', route('practice.contents'));
 
-        $play = $this->get(route('practice.typing.play', ['level' => 'normal']));
+        $play = $this->pageSource('Typing/Play');
         // 開始画面・中断画面からは難易度選択画面へ戻る
-        $play->assertSee('href="'.route('practice.typing.difficulty').'"', false);
+        $this->assertSame(2, substr_count($play, 'href="'.parse_url(route('practice.typing.difficulty'), PHP_URL_PATH).'"'));
         // 結果画面からはメニュー画面まで戻る
-        $play->assertSee('href="'.route('practice.menu').'"', false);
+        $this->assertPageLinksTo('Typing/Play', route('practice.menu'));
     }
 
     /** 練習画面に中断・制限時間・得点・入力欄・回答ボタンがあること */
     public function test_play_screen_has_the_expected_parts(): void
     {
-        $play = $this->get(route('practice.typing.play', ['level' => 'normal']))
+        $this->get(route('practice.typing.play', ['level' => 'normal']))
             ->assertOk()
-            ->getContent();
+            ->assertInertia(fn (Assert $page) => $page->component('Typing/Play'));
 
+        $play = $this->pageSource('Typing/Play');
         $this->assertStringContainsString('中断する', $play);
         $this->assertStringContainsString('id="time-value"', $play);
         $this->assertStringContainsString('000点', $play);
@@ -73,31 +90,36 @@ class TypingPracticeTest extends TestCase
     public function test_level_settings_are_passed_to_the_screen(): void
     {
         // やさしい: 制限時間なし・10問で終わり・ヒントあり
-        $easy = $this->get(route('practice.typing.play', ['level' => 'easy']))->getContent();
-        $this->assertStringContainsString('timeLimitSeconds: 0,', $easy);
-        $this->assertStringContainsString('requiredCount: 10,', $easy);
-        $this->assertStringContainsString('hasHint: true,', $easy);
-        $this->assertStringContainsString('isConversion: false,', $easy);
-        $this->assertStringContainsString('hintIntervalMs: 10000,', $easy);
-        $this->assertStringContainsString('のこり', $easy);
-        $this->assertStringContainsString('id="typing-hint"', $easy);
+        $this->get(route('practice.typing.play', ['level' => 'easy']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitSeconds', 0)
+                ->where('requiredCount', 10)
+                ->where('hasHint', true)
+                ->where('isConversion', false)
+                ->where('hintIntervalMs', 10000));
 
         // ふつう: 制限時間3分・問題数の制限なし・ヒントなし
-        $normal = $this->get(route('practice.typing.play', ['level' => 'normal']))->getContent();
-        $this->assertStringContainsString('timeLimitSeconds: 180,', $normal);
-        $this->assertStringContainsString('requiredCount: 0,', $normal);
-        $this->assertStringContainsString('hasHint: false,', $normal);
-        $this->assertStringContainsString('isConversion: false,', $normal);
-        $this->assertStringContainsString('制限時間', $normal);
-        $this->assertStringNotContainsString('id="typing-hint"', $normal);
+        $this->get(route('practice.typing.play', ['level' => 'normal']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitSeconds', 180)
+                ->where('requiredCount', 0)
+                ->where('hasHint', false)
+                ->where('isConversion', false));
 
         // むずかしい: 制限時間3分・漢字やカタカナへの変換
-        $hard = $this->get(route('practice.typing.play', ['level' => 'hard']))->getContent();
-        $this->assertStringContainsString('timeLimitSeconds: 180,', $hard);
-        $this->assertStringContainsString('hasHint: false,', $hard);
-        $this->assertStringContainsString('isConversion: true,', $hard);
-        $this->assertStringContainsString('id="typing-target"', $hard);
-        $this->assertStringNotContainsString('id="typing-hint"', $hard);
+        $this->get(route('practice.typing.play', ['level' => 'hard']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('timeLimitSeconds', 180)
+                ->where('hasHint', false)
+                ->where('isConversion', true));
+
+        // 画面側は、設定値に応じて「のこり」「制限時間」、ヒント欄、変換先の表記を出し分ける
+        $play = $this->pageSource('Typing/Play');
+        $this->assertStringContainsString('v-if="requiredCount > 0"', $play);
+        $this->assertStringContainsString('のこり', $play);
+        $this->assertStringContainsString('制限時間', $play);
+        $this->assertStringContainsString('v-if="hasHint" id="typing-hint"', $play);
+        $this->assertStringContainsString('v-if="isConversion" id="typing-target"', $play);
     }
 
     /** やさしい・ふつうは、ひらがな10文字以内の言葉を出題すること */
@@ -184,11 +206,9 @@ class TypingPracticeTest extends TestCase
     /** 画面に渡している出題内容を取り出す */
     private function questionsOf(string $level): array
     {
-        $view = $this->get(route('practice.typing.play', ['level' => $level]))
+        return $this->get(route('practice.typing.play', ['level' => $level]))
             ->assertOk()
-            ->original;
-
-        return $view->getData()['questions'];
+            ->viewData('page')['props']['questions'];
     }
 
     /** 出題内容の中から、読みがなが一致するものを1つ取り出す */

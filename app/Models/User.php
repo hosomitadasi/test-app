@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -42,4 +43,16 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /** これまでの練習結果 */
+    public function practiceRecords(): HasMany
+    {
+        return $this->hasMany(PracticeRecord::class);
+    }
+
+    /** 獲得した称号 */
+    public function titles(): HasMany
+    {
+        return $this->hasMany(UserTitle::class);
+    }
 }

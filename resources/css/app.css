@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Vue へ移行してから追加した画面（トップ・会員登録・ログイン・成長の記録）のスタイル
+   練習画面の共通部品（ボタン・枠・見出し）は public/css/practice.css を使う。
+   ========================================================================== */
+
+/* Inertia が差し込む要素は、画面の中央寄せを邪魔しないようにする */
+#app {
+    display: contents;
+}
+
+/* ---------- トップ画面 ---------- */
+
+.app-title {
+    margin: 0 0 56px;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+/* ---------- 入力フォーム ---------- */
+
+/* キーボードで画面が狭くなっても入力欄まで届くよう、縦に送れるようにする */
+.screen--form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 32px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.form-label {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.form-note {
+    margin: 0;
+    font-size: 20px;
+}
+
+.form-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 0 16px;
+    border: 4px solid var(--primary);
+    border-radius: 16px;
+    background: #fff;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 32px;
+    /* 入力中は文字を選んだり消したりできる必要があるため、選択を止めない */
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.form-input:focus {
+    outline: 4px solid var(--primary-dark);
+    outline-offset: 2px;
+}
+
+.form-input.is-invalid {
+    border-color: var(--alert);
+}
+
+/* ダイアログとあわせて、どの欄のことかを小さな文字でも残す */
+.form-error {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--alert);
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.form-check input {
+    width: 36px;
+    height: 36px;
+    margin: 0;
+}
+
+.form .btn {
+    width: 100%;
+}
+
+/* ---------- ダイアログ ---------- */
+
+.dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(26, 26, 26, 0.55);
+}
+
+/* 画面が切り替わる前後に出すダイアログは、後ろの画面を見せない */
+.dialog-backdrop--opaque {
+    background: var(--bg);
+}
+
+.dialog {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    width: 100%;
+    max-width: 520px;
+    padding: 32px 24px;
+    border: 4px solid var(--primary-dark);
+    border-radius: 20px;
+    background: #fff;
+    text-align: center;
+}
+
+.dialog__message {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.dialog .btn {
+    width: 100%;
+}
+
+/* ---------- 練習の結果に添える声かけ ---------- */
+
+.result-message {
+    min-height: 1.6em;
+    margin: -24px 0 24px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1b5e20;
+}
+
+.result-title {
+    margin: -16px 0 24px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+/* ---------- 成長の記録 ---------- */
+
+.growth {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.growth > .title {
+    text-align: center;
+}
+
+.growth .button-stack {
+    margin: 8px auto 0;
+}
+
+.growth-section {
+    padding: 16px 20px;
+    border: 3px solid #d8d2c4;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.growth-section__heading {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #4a4a4a;
+}
+
+.growth-title__name {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--primary-dark);
+}
+
+.growth-title__description {
+    margin: 4px 0 0;
+    font-size: 26px;
+}
+
+.skill-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* 色だけで判断させないよう、丸の横に必ず状態を文字で書く */
+.skill {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 26px;
+}
+
+.skill__mark {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 3px solid #9e9e9e;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.skill--learned .skill__mark {
+    border-color: #1b5e20;
+    background: #2e7d32;
+}
+
+.skill--practicing .skill__mark {
+    border-color: #b27800;
+    background: #f9a825;
+}
+
+.skill__label {
+    min-width: 5em;
+    font-weight: 700;
+}
+
+.growth-count {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.growth-count__value {
+    margin: 0 8px;
+    font-size: 64px;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary-dark);
+}
+
+/* 継続日数は主役にしないため、控えめに出す */
+.growth-streak {
+    margin: 0;
+    font-size: 22px;
+    text-align: center;
+}
+
+/* ---------- これまでの記録 ---------- */
+
+.history-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.history-tabs .btn {
+    min-height: 64px;
+    font-size: 22px;
+}
+
+.history-tabs .btn[aria-pressed="true"] {
+    background: var(--primary);
+    border-color: var(--primary-dark);
+    color: #fff;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 24px;
+}
+
+.history-list__item {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px dashed #d8d2c4;
+}
+
+.history-list__item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.history-list__value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.history-empty {
+    margin: 0;
+    font-size: 24px;
+}
+
+.history-group + .history-group {
+    margin-top: 16px;
+}
+
+.history-group__name {
+    margin: 0 0 6px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+@media (max-height: 640px) {
+    .app-title { font-size: 38px; margin-bottom: 40px; }
+    .form-input { min-height: 68px; font-size: 28px; }
+    .dialog__message { font-size: 24px; }
+    .growth-title__name { font-size: 32px; }
+    .growth-count__value { font-size: 52px; }
+}

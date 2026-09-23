@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * 文字打ち練習の画面を返すコントローラ。
@@ -153,9 +154,9 @@ class TypingPracticeController extends Controller
     /**
      * 難易度選択画面を表示する。
      */
-    public function difficulty(): View
+    public function difficulty(): Response
     {
-        return view('typing.difficulty', [
+        return Inertia::render('Typing/Difficulty', [
             'label' => self::LABEL,
             'levels' => self::LEVEL_SETTINGS,
         ]);
@@ -164,11 +165,11 @@ class TypingPracticeController extends Controller
     /**
      * 練習画面を表示する。難易度に応じた問題とヒントをまとめて渡す。
      */
-    public function play(string $level): View
+    public function play(string $level): Response
     {
         $setting = self::LEVEL_SETTINGS[$level];
 
-        return view('typing.play', [
+        return Inertia::render('Typing/Play', [
             'level' => $level,
             'label' => self::LABEL,
             'setting' => $setting,
