@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\ChatPracticeController;
 use App\Http\Controllers\GrowthController;
 use App\Http\Controllers\PracticeController;
 use App\Http\Controllers\PracticeRecordController;
@@ -70,15 +71,29 @@ Route::middleware('auth')->group(function () {
             ->whereIn('level', PracticeController::LEVELS)
             ->name('play');
 
-        // 文字打ち練習。画面操作の練習とは進み方が異なるため、別の系統として持つ。
-        // （contents → difficulty → play。練習詳細画面は経由しない）
+        // 文字入力の練習。画面操作の練習とは出題も進み方も異なるため、別の系統として持つ。
+        // （contents → details → difficulty → play。詳細画面で「文字打ち」か「チャット型」を選ぶ）
         Route::prefix('typing')->name('typing.')->group(function () {
+            Route::get('/details', [TypingPracticeController::class, 'details'])
+                ->name('details');
+
+            // 文字打ち練習
             Route::get('/difficulty', [TypingPracticeController::class, 'difficulty'])
                 ->name('difficulty');
 
             Route::get('/play/{level}', [TypingPracticeController::class, 'play'])
                 ->whereIn('level', TypingPracticeController::LEVELS)
                 ->name('play');
+
+            // チャット型練習
+            Route::prefix('chat')->name('chat.')->group(function () {
+                Route::get('/difficulty', [ChatPracticeController::class, 'difficulty'])
+                    ->name('difficulty');
+
+                Route::get('/play/{level}', [ChatPracticeController::class, 'play'])
+                    ->whereIn('level', ChatPracticeController::LEVELS)
+                    ->name('play');
+            });
         });
     });
 

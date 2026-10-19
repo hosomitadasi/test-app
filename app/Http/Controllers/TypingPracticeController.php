@@ -8,7 +8,8 @@ use Inertia\Response;
 /**
  * 文字打ち練習の画面を返すコントローラ。
  *
- * 練習内容選択（contents） → 難易度選択（difficulty） → 練習（play）と進む。
+ * 練習内容選択（contents） → 練習詳細選択（details） → 難易度選択（difficulty） → 練習（play）と進む。
+ * 練習詳細選択では、文字打ち練習とチャット型練習（ChatPracticeController）のどちらかを選ぶ。
  * 画面操作の練習（PracticeController）とは進み方も出題内容も異なるため、
  * 既存の練習に影響を出さないよう別のコントローラとして持つ。
  * 制限時間・得点・中断のしくみは画面操作の練習と同じ考え方を踏襲する。
@@ -34,7 +35,7 @@ class TypingPracticeController extends Controller
     private const HINT_INTERVAL_MS = 10000;
 
     /** 画面に出す練習の名前 */
-    private const LABEL = '文字打ち練習';
+    public const LABEL = '文字打ち練習';
 
     /**
      * フリック入力のボタン（12キー）に書かれている文字と、そのボタンで打てる文字。
@@ -152,13 +153,33 @@ class TypingPracticeController extends Controller
     ];
 
     /**
-     * 難易度選択画面を表示する。
+     * 文字入力の練習詳細選択画面（文字打ち練習／チャット型練習）を表示する。
+     * 画面操作の練習と同じ画面を使う。
+     */
+    public function details(): Response
+    {
+        return Inertia::render('Menu/Details', [
+            'title' => '文字入力の練習を選ぶ',
+            'backHref' => route('practice.contents', [], false),
+            'practices' => [
+                ['label' => self::LABEL.'をする', 'href' => route('practice.typing.difficulty', [], false)],
+                ['label' => ChatPracticeController::LABEL.'をする', 'href' => route('practice.typing.chat.difficulty', [], false)],
+            ],
+        ]);
+    }
+
+    /**
+     * 難易度選択画面を表示する。画面操作の練習と同じ画面を使う。
      */
     public function difficulty(): Response
     {
-        return Inertia::render('Typing/Difficulty', [
+        return Inertia::render('Menu/Difficulty', [
             'label' => self::LABEL,
-            'levels' => self::LEVEL_SETTINGS,
+            'backHref' => route('practice.typing.details', [], false),
+            'levels' => array_map(fn (string $level) => [
+                'label' => self::LEVEL_SETTINGS[$level]['label'],
+                'href' => route('practice.typing.play', ['level' => $level], false),
+            ], self::LEVELS),
         ]);
     }
 

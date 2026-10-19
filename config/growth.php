@@ -70,6 +70,14 @@ return [
                 'advanced' => ['name' => '文字入力上達', 'description' => 'かんじやカタカナにも変えられるようになりました', 'condition' => null],
             ],
         ],
+        'chat' => [
+            'label' => 'チャット',
+            'practice_label' => 'チャット型練習',
+            'titles' => [
+                'beginner' => ['name' => 'チャット初級', 'description' => 'しつもんに 文字で こたえられるようになりました', 'condition' => null],
+                'advanced' => ['name' => 'チャット上達', 'description' => 'カタカナや かんじで 返事を送れるようになりました', 'condition' => null],
+            ],
+        ],
     ],
 
     // 最終的な全体称号

@@ -109,13 +109,15 @@ class GrowthTest extends TestCase
             ->where('currentTitle', null)
             ->where('monthlyCount', 4)
             ->where('streakDays', 3)
-            ->has('practices', 5)
+            ->has('practices', 6)
             ->where('practices.0.label', 'タップ')
             ->where('practices.0.statusLabel', '練習中です')
             ->where('practices.1.label', '長押し')
             ->where('practices.1.statusLabel', 'これから練習します')
             ->where('practices.4.label', '文字入力')
-            ->where('practices.4.statusLabel', '練習中です'));
+            ->where('practices.4.statusLabel', '練習中です')
+            ->where('practices.5.label', 'チャット')
+            ->where('practices.5.statusLabel', 'これから練習します'));
 
         // 電話の練習はまだないため出さない
         $this->assertStringNotContainsString('電話', json_encode(config('growth.practices'), JSON_UNESCAPED_UNICODE));

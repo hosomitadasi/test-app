@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('practice_records', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            // tap / long / swipe / flick / typing
+            // tap / long / swipe / flick / typing / chat
             $table->string('practice_type', 20);
             // easy / normal / hard
             $table->string('level', 10);

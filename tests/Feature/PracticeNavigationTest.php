@@ -51,7 +51,8 @@ class PracticeNavigationTest extends TestCase
         $this->get(route('practice.details'))->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Menu/Details')
-                ->where('practices.tap.menu_label', '軽く押す練習をする'));
+                ->where('title', '画面操作の練習を選ぶ')
+                ->where('practices.0.label', '軽く押す練習をする'));
     }
 
     /** 4種類すべての練習が、3つの難易度で表示できること */
@@ -62,7 +63,7 @@ class PracticeNavigationTest extends TestCase
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
                     ->component('Menu/Difficulty')
-                    ->where('practice.label', $label));
+                    ->where('label', $label));
 
             foreach (self::LEVELS as $level => $levelLabel) {
                 $this->get(route('practice.play', ['type' => $type, 'level' => $level]))
@@ -81,28 +82,26 @@ class PracticeNavigationTest extends TestCase
         $this->assertPageLinksTo('Menu/Menu', route('practice.contents'));
         $this->assertPageLinksTo('Menu/Contents', route('practice.details'));
 
-        // 文字入力の練習は、練習詳細画面を経由せず難易度選択画面へ進む
-        $this->assertPageLinksTo('Menu/Contents', route('practice.typing.difficulty'));
+        // 文字入力の練習は、文字入力の練習詳細画面へ進む
+        $this->assertPageLinksTo('Menu/Contents', route('practice.typing.details'));
 
         // 練習詳細画面からは、4種類それぞれの難易度選択画面へ進む
-        $this->assertStringContainsString(':href="`/practice/difficulty/${type}`"', $this->pageSource('Menu/Details'));
+        $this->assertStringContainsString(':href="practice.href"', $this->pageSource('Menu/Details'));
         $this->get(route('practice.details'))->assertInertia(fn (Assert $page) => $page
             ->has('practices', count(self::TYPES))
-            ->where('practices.tap.menu_label', self::TYPES['tap'].'をする')
-            ->where('practices.long.menu_label', self::TYPES['long'].'をする')
-            ->where('practices.swipe.menu_label', self::TYPES['swipe'].'をする')
-            ->where('practices.flick.menu_label', self::TYPES['flick'].'をする'));
-        foreach (array_keys(self::TYPES) as $type) {
-            $this->assertSame('/practice/difficulty/'.$type, parse_url(route('practice.difficulty', ['type' => $type]), PHP_URL_PATH));
-        }
+            ->where('practices', array_map(fn (string $type, string $label) => [
+                'label' => $label.'をする',
+                'href' => '/practice/difficulty/'.$type,
+            ], array_keys(self::TYPES), self::TYPES)));
 
         // 難易度選択画面からは、同じ練習の3難易度へ進む
-        $this->assertStringContainsString(':href="`/practice/play/${type}/${level}`"', $this->pageSource('Menu/Difficulty'));
+        $this->assertStringContainsString(':href="level.href"', $this->pageSource('Menu/Difficulty'));
         foreach (array_keys(self::TYPES) as $type) {
             $this->get(route('practice.difficulty', ['type' => $type]))->assertInertia(fn (Assert $page) => $page
-                ->where('type', $type)
-                ->has('levels', count(self::LEVELS))
-                ->has('levels.easy')->has('levels.normal')->has('levels.hard'));
+                ->where('levels', array_map(fn (string $level, string $levelLabel) => [
+                    'label' => $levelLabel,
+                    'href' => '/practice/play/'.$type.'/'.$level,
+                ], array_keys(self::LEVELS), self::LEVELS)));
         }
     }
 
@@ -110,8 +109,13 @@ class PracticeNavigationTest extends TestCase
     public function test_back_links_point_to_the_expected_screen(): void
     {
         $this->assertPageLinksTo('Menu/Contents', route('practice.menu'));
-        $this->assertPageLinksTo('Menu/Details', route('practice.contents'));
-        $this->assertPageLinksTo('Menu/Difficulty', route('practice.details'));
+        // 練習詳細画面・難易度選択画面は使い回すため、戻り先はサーバーから渡す
+        $this->assertStringContainsString(':href="backHref"', $this->pageSource('Menu/Details'));
+        $this->assertStringContainsString(':href="backHref"', $this->pageSource('Menu/Difficulty'));
+        $this->get(route('practice.details'))
+            ->assertInertia(fn (Assert $page) => $page->where('backHref', '/practice/contents'));
+        $this->get(route('practice.difficulty', ['type' => 'tap']))
+            ->assertInertia(fn (Assert $page) => $page->where('backHref', '/practice/details'));
 
         $play = $this->pageSource('Practice/Play');
         // 開始画面・中断画面からは難易度選択画面へ戻る

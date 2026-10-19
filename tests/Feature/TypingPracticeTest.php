@@ -29,37 +29,53 @@ class TypingPracticeTest extends TestCase
         $this->actingAs(User::factory()->create());
     }
 
-    /** 練習内容選択画面から難易度選択画面へ進めること */
-    public function test_contents_links_to_the_difficulty_screen(): void
+    /** 練習内容選択画面から、文字入力の練習詳細選択画面へ進めること */
+    public function test_contents_links_to_the_details_screen(): void
     {
         $this->get(route('practice.contents'))->assertOk();
-        $this->assertPageLinksTo('Menu/Contents', route('practice.typing.difficulty'));
+        $this->assertPageLinksTo('Menu/Contents', route('practice.typing.details'));
         $this->assertStringContainsString('文字入力の練習をする', $this->pageSource('Menu/Contents'));
     }
 
-    /** 難易度選択画面から3つの難易度へ進めること */
+    /** 練習詳細選択画面で、文字打ち練習とチャット型練習を選べること */
+    public function test_details_screen_links_to_typing_and_chat(): void
+    {
+        $this->get(route('practice.typing.details'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Menu/Details')
+                ->where('title', '文字入力の練習を選ぶ')
+                ->where('practices', [
+                    ['label' => '文字打ち練習をする', 'href' => '/practice/typing/difficulty'],
+                    ['label' => 'チャット型練習をする', 'href' => '/practice/typing/chat/difficulty'],
+                ]));
+    }
+
+    /** 難易度選択画面は画面操作の練習と同じ画面を使い、3つの難易度へ進めること */
     public function test_difficulty_screen_links_to_every_level(): void
     {
         $this->get(route('practice.typing.difficulty'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Typing/Difficulty')
+                ->component('Menu/Difficulty')
                 ->where('label', '文字打ち練習')
-                ->where('levels.easy.label', self::LEVELS['easy'])
-                ->where('levels.normal.label', self::LEVELS['normal'])
-                ->where('levels.hard.label', self::LEVELS['hard']));
+                ->where('levels', array_map(fn (string $level, string $label) => [
+                    'label' => $label,
+                    'href' => '/practice/typing/play/'.$level,
+                ], array_keys(self::LEVELS), self::LEVELS)));
 
-        $this->assertStringContainsString(':href="`/practice/typing/play/${level}`"', $this->pageSource('Typing/Difficulty'));
-        foreach (array_keys(self::LEVELS) as $level) {
-            $this->assertSame('/practice/typing/play/'.$level, parse_url(route('practice.typing.play', ['level' => $level]), PHP_URL_PATH));
-        }
+        // 文字打ち練習だけの難易度選択画面は持たない
+        $this->assertFileDoesNotExist(resource_path('js/Pages/Typing/Difficulty.vue'));
     }
 
     /** 「練習を選び直す」が想定どおりの画面へ戻ること */
     public function test_back_links_point_to_the_expected_screen(): void
     {
-        // 文字打ち練習は練習詳細画面を経由しないため、練習内容選択画面へ戻る
-        $this->assertPageLinksTo('Typing/Difficulty', route('practice.contents'));
+        // 練習詳細選択画面からは練習内容選択画面へ、難易度選択画面からは練習詳細選択画面へ戻る
+        $this->get(route('practice.typing.details'))
+            ->assertInertia(fn (Assert $page) => $page->where('backHref', '/practice/contents'));
+        $this->get(route('practice.typing.difficulty'))
+            ->assertInertia(fn (Assert $page) => $page->where('backHref', '/practice/typing/details'));
 
         $play = $this->pageSource('Typing/Play');
         // 開始画面・中断画面からは難易度選択画面へ戻る

@@ -111,23 +111,35 @@ class PracticeController extends Controller
 
     /**
      * 練習詳細選択画面（軽く押す／長く押す／なぞる／はらう）を表示する。
+     *
+     * 文字入力の練習と同じ画面を使うため、ボタンの名前と行き先をここで決めて渡す。
      */
     public function details(): Response
     {
         return Inertia::render('Menu/Details', [
-            'practices' => self::PRACTICES,
+            'title' => '画面操作の練習を選ぶ',
+            'backHref' => route('practice.contents', [], false),
+            'practices' => array_map(fn (string $type) => [
+                'label' => self::PRACTICES[$type]['menu_label'],
+                'href' => route('practice.difficulty', ['type' => $type], false),
+            ], self::PRACTICE_TYPES),
         ]);
     }
 
     /**
      * 練習難易度選択画面（やさしい／ふつう／むずかしい）を表示する。
+     *
+     * 文字入力の練習と同じ画面を使うため、ボタンの名前と行き先をここで決めて渡す。
      */
     public function difficulty(string $type): Response
     {
         return Inertia::render('Menu/Difficulty', [
-            'type' => $type,
-            'practice' => self::PRACTICES[$type],
-            'levels' => self::LEVEL_SETTINGS,
+            'label' => self::PRACTICES[$type]['label'],
+            'backHref' => route('practice.details', [], false),
+            'levels' => array_map(fn (string $level) => [
+                'label' => self::LEVEL_SETTINGS[$level]['label'],
+                'href' => route('practice.play', ['type' => $type, 'level' => $level], false),
+            ], self::LEVELS),
         ]);
     }
 
