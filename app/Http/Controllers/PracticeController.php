@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\TodayPracticeService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -95,10 +97,14 @@ class PracticeController extends Controller
 
     /**
      * メニュー画面（今日の練習）を表示する。
+     *
+     * 今日の練習は日ごとに変わり、その日にやり終えたものは「完了」として押せなくする。
      */
-    public function menu(): Response
+    public function menu(Request $request, TodayPracticeService $todayPractice): Response
     {
-        return Inertia::render('Menu/Menu');
+        return Inertia::render('Menu/Menu', [
+            'todayPractices' => $todayPractice->forUser($request->user()),
+        ]);
     }
 
     /**

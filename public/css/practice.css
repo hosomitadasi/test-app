@@ -17,6 +17,7 @@
     --alert: #c62828;       /* 残りわずかの時間表示 */
     --frame-outside: #e6e1d5;  /* 枠の外側（画面が枠より広いときに見える部分） */
     --link: #0d47a1;        /* メニューの練習リンク */
+    --done: #2e7d32;        /* やり終えた練習の「完了」 */
 
     /* Android 端末を想定した基準サイズ */
     --frame-width: 700px;
@@ -330,7 +331,7 @@ body {
     width: 100%;
 }
 
-/* 練習名は下線なしのリンクとして見せる（遷移先は後日設定する） */
+/* 練習名は下線なしのリンクとして見せる */
 .menu-list__item {
     font-size: 32px;
     font-weight: 700;
@@ -342,6 +343,24 @@ body {
 
 .menu-list__item:active {
     opacity: 0.6;
+}
+
+/* やり終えた練習。押せないことが分かるよう、色を薄くして「完了」を添える */
+.menu-list__item--completed {
+    color: var(--quiet-border);
+    cursor: default;
+    pointer-events: none;
+}
+
+.menu-list__badge {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 2px 12px;
+    border-radius: 999px;
+    background: var(--done);
+    color: #fff;
+    font-size: 0.75em;
+    vertical-align: middle;
 }
 
 /* ---------- 画面が小さい端末への調整 ---------- */

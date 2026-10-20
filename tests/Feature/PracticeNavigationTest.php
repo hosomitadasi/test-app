@@ -199,11 +199,6 @@ class PracticeNavigationTest extends TestCase
     /** 後日実装する項目には遷移先を設定していないこと */
     public function test_unimplemented_items_have_no_link(): void
     {
-        $menu = $this->pageSource('Menu/Menu');
-        $this->assertStringContainsString('<a class="menu-list__item">①○○の練習</a>', $menu);
-        $this->assertStringContainsString('<a class="menu-list__item">②○○の練習</a>', $menu);
-        $this->assertStringContainsString('<a class="menu-list__item">③○○の練習</a>', $menu);
-
         // 電話の練習のみ、後日実装のため遷移させずボタンのままとする
         $this->assertStringContainsString(
             '<button type="button" class="btn btn--primary">電話の練習をする</button>',
