@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\ChatPracticeController;
+use App\Models\Question;
 use App\Models\User;
+use Database\Seeders\QuestionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -27,6 +29,9 @@ class ChatPracticeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 質問は questions テーブルから読むため、最初の質問を登録しておく
+        $this->seed(QuestionSeeder::class);
 
         // 練習の画面は、ログインしている人だけが使える
         $this->user = User::factory()->create();
@@ -175,6 +180,44 @@ class ChatPracticeTest extends TestCase
     public function test_unknown_level_is_not_found(): void
     {
         $this->get('/practice/typing/chat/play/unknown')->assertNotFound();
+    }
+
+    /** 質問はコントローラの定数ではなく、questions テーブルから読むこと */
+    public function test_questions_are_read_from_the_database(): void
+    {
+        $controller = new \ReflectionClass(ChatPracticeController::class);
+        $this->assertFalse($controller->hasConstant('QUESTIONS'));
+        $this->assertFalse($controller->hasConstant('CONVERSION_QUESTIONS'));
+
+        Question::create(['practice_type' => 'chat', 'is_conversion' => false, 'text' => '好きな歌は何ですか？']);
+        Question::create(['practice_type' => 'chat', 'is_conversion' => true, 'text' => '好きな鳥は何ですか？', 'answer_format' => 'katakana']);
+        // 文字打ち練習の問題は、チャット型練習には出さない
+        Question::create(['practice_type' => 'typing', 'is_conversion' => false, 'text' => 'もじうちだけ']);
+
+        $this->assertContains('好きな歌は何ですか？', array_column($this->propsOf('easy')['questions'], 'text'));
+        $this->assertNotContains('もじうちだけ', array_column($this->propsOf('easy')['questions'], 'text'));
+        $this->assertContains('好きな鳥は何ですか？　カタカナで回答してください', array_column($this->propsOf('hard')['questions'], 'text'));
+    }
+
+    /** 個人情報を聞く質問がテーブルに入ってしまっても、画面には出さないこと */
+    public function test_forbidden_questions_in_the_database_are_not_shown(): void
+    {
+        Question::create(['practice_type' => 'chat', 'is_conversion' => false, 'text' => 'ご住所はどこですか？']);
+
+        $this->assertNotContains('ご住所はどこですか？', array_column($this->propsOf('normal')['questions'], 'text'));
+    }
+
+    /** 1回の練習で同じ質問を出さないよう、番号つきで渡し、画面側もくり返さないこと */
+    public function test_questions_are_not_repeated_within_one_practice(): void
+    {
+        foreach (array_keys(self::LEVELS) as $level) {
+            $ids = array_column($this->propsOf($level)['questions'], 'id');
+            $this->assertSame($ids, array_values(array_unique($ids)));
+        }
+
+        $script = file_get_contents(resource_path('js/composables/useChatGame.js'));
+        $this->assertStringContainsString('createQuestionDeck', $script);
+        $this->assertStringNotContainsString('% QUESTIONS.length', $script);
     }
 
     /** 画面に渡している内容を取り出す */

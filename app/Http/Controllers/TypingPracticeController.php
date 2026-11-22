@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Question;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,6 +17,7 @@ use Inertia\Response;
  *
  * 通信を伴わないクライアント完結型のため、
  * ここでは出題内容と難易度ごとの設定値の受け渡しのみを担当する。
+ * 問題は questions テーブル（practice_type = typing）に保存している。
  */
 class TypingPracticeController extends Controller
 {
@@ -80,47 +82,6 @@ class TypingPracticeController extends Controller
 
     /** 濁点・半濁点・小さい文字を打つボタンの、高齢者にも分かる言い表し方 */
     private const MODIFIER_KEY_LABEL = '「ま」と書かれたボタンの下にあるボタン';
-
-    /**
-     * 「やさしい」「ふつう」で出す問題。ひらがな10文字以内の身近な言葉。
-     *
-     * 濁点・半濁点・小さい文字を含む言葉も混ぜ、ヒントで打ち方を学べるようにする。
-     */
-    private const KANA_WORDS = [
-        'りんご', 'みかん', 'たまご', 'さかな', 'でんわ', 'くるま', 'ねこ', 'はなび',
-        'ぼうし', 'とけい', 'さとう', 'しんぶん', 'おちゃ', 'たんぽぽ', 'えんぴつ',
-        'かばん', 'ざぶとん', 'めがね', 'ゆびわ', 'ぎゅうにゅう', 'きっぷ', 'てがみ',
-        'やさい', 'くすり', 'こうえん', 'たいよう', 'ひこうき', 'じてんしゃ', 'みずうみ',
-        'ざっし', 'せんぷうき', 'おんがく',
-    ];
-
-    /**
-     * 「むずかしい」で出す問題。読みがなを見ながら、漢字・カタカナへ変換して入力する。
-     *
-     * [読みがな, 入力してほしい表記] の形で持つ。
-     */
-    private const CONVERSION_WORDS = [
-        ['りんご', '林檎'],
-        ['といれっとぺーぱー', 'トイレットペーパー'],
-        ['でんわ', '電話'],
-        ['しんぶん', '新聞'],
-        ['めがね', '眼鏡'],
-        ['びょういん', '病院'],
-        ['くすり', '薬'],
-        ['れいぞうこ', '冷蔵庫'],
-        ['せんたくき', '洗濯機'],
-        ['かさ', '傘'],
-        ['ゆうびんきょく', '郵便局'],
-        ['てれび', 'テレビ'],
-        ['こーひー', 'コーヒー'],
-        ['ばす', 'バス'],
-        ['えき', '駅'],
-        ['てがみ', '手紙'],
-        ['さんぽ', '散歩'],
-        ['たいおんけい', '体温計'],
-        ['みそしる', '味噌汁'],
-        ['えあこん', 'エアコン'],
-    ];
 
     /** 難易度ごとの表示内容と進め方 */
     private const LEVEL_SETTINGS = [
@@ -207,8 +168,11 @@ class TypingPracticeController extends Controller
     /**
      * 難易度ごとの出題一覧を作る。
      *
+     * questions テーブルから、その難易度で使う問題を重ならないように取り出し、
      * 毎回同じ順番にならないよう並べ替えたうえで返す。
+     * 画面側は1回の練習の中で同じ問題を2度出さない（一巡したらそこで練習を終える）。
      * 1問ごとの内容は
+     *   id     … 問題の番号（同じ問題を出していないかの確かめに使う）
      *   prompt … 画面に大きく出す文字（読みがな）
      *   answer … 正解とみなす入力
      *   target … 入力してほしい表記（「むずかしい」のみ。読みがなの下に小さく出す）
@@ -217,33 +181,29 @@ class TypingPracticeController extends Controller
      */
     private function questionsFor(string $level): array
     {
-        if (self::LEVEL_SETTINGS[$level]['is_conversion']) {
-            $words = self::CONVERSION_WORDS;
-            shuffle($words);
+        $setting = self::LEVEL_SETTINGS[$level];
+        $isConversion = $setting['is_conversion'];
+        $withHint = $setting['has_hint'];
 
-            return array_map(static function (array $word): array {
+        return Question::forPractice(Question::TYPE_TYPING, $isConversion)
+            ->inRandomOrder()
+            ->get(['id', 'text', 'answer'])
+            ->unique('text')
+            ->map(function (Question $question) use ($isConversion, $withHint): array {
+                // 変換の練習では、入力してほしい表記と完全に一致したときだけ正解とする。
+                // それ以外は、出したひらがなをそのまま入力すれば正解とする。
+                $answer = $isConversion ? (string) $question->answer : $question->text;
+
                 return [
-                    'prompt' => $word[0],
-                    'target' => $word[1],
-                    // 変換の練習のため、入力してほしい表記と完全に一致したときだけ正解とする。
-                    'answer' => $word[1],
-                    'hints' => [],
+                    'id' => $question->id,
+                    'prompt' => $question->text,
+                    'target' => $isConversion ? $answer : '',
+                    'answer' => $answer,
+                    'hints' => $withHint ? $this->buildHints($question->text) : [],
                 ];
-            }, $words);
-        }
-
-        $words = self::KANA_WORDS;
-        shuffle($words);
-        $withHint = self::LEVEL_SETTINGS[$level]['has_hint'];
-
-        return array_map(function (string $word) use ($withHint): array {
-            return [
-                'prompt' => $word,
-                'target' => '',
-                'answer' => $word,
-                'hints' => $withHint ? $this->buildHints($word) : [],
-            ];
-        }, $words);
+            })
+            ->values()
+            ->all();
     }
 
     /**

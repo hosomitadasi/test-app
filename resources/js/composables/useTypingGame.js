@@ -7,8 +7,11 @@
    - 練習をやり終えたら onFinish(得点) を呼ぶ（結果の記録に使う）
    - 画面を離れたら、タイマーや画面全体に付けたイベントを片付ける
      （Inertia では画面を読み込み直さずに切り替わるため）
+   - 1回の練習の中では、一度出した問題を練習が終わるまで出さない
+     （用意した問題を出し尽くしたら、制限時間が残っていてもそこで練習を終える）
    ========================================================================== */
 import { onBeforeUnmount, onMounted } from 'vue';
+import { createQuestionDeck } from './questionDeck';
 
 export function useTypingGame(CONFIG, { onFinish } = {}) {
     var TIME_LIMIT_MS = (CONFIG.timeLimitSeconds || 0) * 1000; // 0 なら制限時間なし
@@ -18,7 +21,7 @@ export function useTypingGame(CONFIG, { onFinish } = {}) {
     var HINT_INTERVAL_MS = CONFIG.hintIntervalMs || 10000;     // ヒントを1段階進める間隔
     var SCORE_DIGITS = CONFIG.scoreDigits || 3;
     var MAX_SCORE = Math.pow(10, SCORE_DIGITS) - 1;            // 3桁 = 999点まで
-    var QUESTIONS = Array.isArray(CONFIG.questions) ? CONFIG.questions : [];
+    var deck = createQuestionDeck(CONFIG.questions);           // 1回の練習で同じ問題を出さないための山札
 
     var ALERT_REMAIN_MS = 30 * 1000; // 残りこの時間から時間表示を赤くする
     var GUARD_MS = 700;              // 画面が変わった直後、指が残っていても誤って押させない時間
@@ -32,7 +35,6 @@ export function useTypingGame(CONFIG, { onFinish } = {}) {
     var state = 'start';
     var score = 0;
     var doneCount = 0;         // 「やさしい」で数える、正解できた問題数
-    var questionIndex = 0;     // 今出している問題（一巡したら先頭へ戻る）
     var current = null;
     var elapsedMs = 0;         // 中断中を除いた累計経過時間
     var segmentStart = 0;      // 現在計測中の区間の開始時刻（performance.now）
@@ -121,10 +123,15 @@ export function useTypingGame(CONFIG, { onFinish } = {}) {
 
     /** 次の問題を画面に出す。入力欄を空にして、すぐ打てる状態にする。 */
     function showQuestion() {
-        if (QUESTIONS.length === 0) { return; }
+        if (deck.size === 0) { return; }
 
-        current = QUESTIONS[questionIndex % QUESTIONS.length];
-        questionIndex += 1;
+        var next = deck.next();
+        if (next === null) {
+            // この練習で出せる問題をすべて出し終えたので、同じ問題をくり返さずに終える
+            finishPractice();
+            return;
+        }
+        current = next;
 
         promptValue.textContent = current.prompt;
         if (targetValue) {
@@ -305,7 +312,7 @@ export function useTypingGame(CONFIG, { onFinish } = {}) {
         score = 0;
         doneCount = 0;
         elapsedMs = 0;
-        questionIndex = 0;
+        deck.reset();            // 新しい練習では、すべての問題を並べ替えて出し直せるようにする
         current = null;
         isLocked = true;
         input.value = '';

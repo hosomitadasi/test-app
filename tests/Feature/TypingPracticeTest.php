@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\TypingPracticeController;
+use App\Models\Question;
 use App\Models\User;
+use Database\Seeders\QuestionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -24,6 +27,9 @@ class TypingPracticeTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 問題は questions テーブルから読むため、最初の問題を登録しておく
+        $this->seed(QuestionSeeder::class);
 
         // 練習の画面は、ログインしている人だけが使える
         $this->actingAs(User::factory()->create());
@@ -217,6 +223,46 @@ class TypingPracticeTest extends TestCase
     public function test_unknown_level_is_not_found(): void
     {
         $this->get('/practice/typing/play/unknown')->assertNotFound();
+    }
+
+    /** 問題はコントローラの定数ではなく、questions テーブルから読むこと */
+    public function test_questions_are_read_from_the_database(): void
+    {
+        $controller = new \ReflectionClass(TypingPracticeController::class);
+        $this->assertFalse($controller->hasConstant('KANA_WORDS'));
+        $this->assertFalse($controller->hasConstant('CONVERSION_WORDS'));
+
+        Question::create(['practice_type' => 'typing', 'is_conversion' => false, 'text' => 'てすとのことば']);
+        Question::create(['practice_type' => 'typing', 'is_conversion' => true, 'text' => 'かいぎ', 'answer' => '会議']);
+        // チャット型練習の問題は、文字打ち練習には出さない
+        Question::create(['practice_type' => 'chat', 'is_conversion' => false, 'text' => 'ちゃっとだけのしつもん']);
+
+        $this->assertContains('てすとのことば', array_column($this->questionsOf('normal'), 'prompt'));
+        $this->assertNotContains('ちゃっとだけのしつもん', array_column($this->questionsOf('normal'), 'prompt'));
+        // 変換の問題は「むずかしい」だけに出す
+        $this->assertNotContains('かいぎ', array_column($this->questionsOf('normal'), 'prompt'));
+        $this->assertSame('会議', $this->findQuestion('hard', 'かいぎ')['answer']);
+    }
+
+    /** 1回の練習で同じ問題を出さないよう、重ならない問題を、番号つきで渡すこと */
+    public function test_questions_are_distinct_within_one_practice(): void
+    {
+        foreach (array_keys(self::LEVELS) as $level) {
+            $questions = $this->questionsOf($level);
+            $ids = array_column($questions, 'id');
+            $prompts = array_column($questions, 'prompt');
+
+            $this->assertCount(count($questions), array_unique($ids), $level.' の問題の番号が重なっています');
+            $this->assertCount(count($questions), array_unique($prompts), $level.' の問題が重なっています');
+        }
+
+        // やさしいは10問答えると終わるため、10問以上を用意している
+        $this->assertGreaterThanOrEqual(10, count($this->questionsOf('easy')));
+
+        // 画面側は、出し終えた問題を先頭に戻ってくり返さない
+        $script = file_get_contents(resource_path('js/composables/useTypingGame.js'));
+        $this->assertStringContainsString('createQuestionDeck', $script);
+        $this->assertStringNotContainsString('% QUESTIONS.length', $script);
     }
 
     /** 画面に渡している出題内容を取り出す */

@@ -8,7 +8,7 @@
 | 練習項目ごとの称号と、練習結果に応じた声かけの文言をまとめる。
 |
 | ■ 称号の獲得条件（condition）について
-|   獲得条件はまだ決まっていないため、すべて null（＝獲得しない）にしている。
+|   電話の練習以外は獲得条件がまだ決まっていないため、null（＝獲得しない）にしている。
 |   決まったら、次の形で書き込むと、その練習をやり終えたときに判定される。
 |
 |     'condition' => ['level' => 'normal', 'min_score' => 20, 'times' => 3],
@@ -28,7 +28,6 @@
 return [
 
     // 練習項目。キーは練習結果の practice_type と同じ。
-    // 電話の練習は、練習そのものを実装するときに追加する。
     'practices' => [
         'tap' => [
             'label' => 'タップ',
@@ -76,6 +75,28 @@ return [
             'titles' => [
                 'beginner' => ['name' => 'チャット初級', 'description' => 'しつもんに 文字で こたえられるようになりました', 'condition' => null],
                 'advanced' => ['name' => 'チャット上達', 'description' => 'カタカナや かんじで 返事を送れるようになりました', 'condition' => null],
+            ],
+        ],
+        // 電話の練習は、合格したとき（練習完了）だけ記録が残り、得点は「できた回数」とする。
+        // 電話の練習の称号は条件を決めて追加した。ほかの練習の条件（null）は変えていない。
+        'phone_answer' => [
+            'label' => '電話を取る',
+            'practice_label' => '電話を取る練習',
+            'titles' => [
+                // 「やさしい」で 3回続けて「応答」を押せたら獲得
+                'beginner' => ['name' => '電話を取る初級', 'description' => 'かかってきた電話に 出られるようになりました', 'condition' => ['level' => 'easy', 'min_score' => 3, 'times' => 1]],
+                // 「むずかしい」で 5回中4回以上、指示どおりに押せたら獲得
+                'advanced' => ['name' => '電話を取る上達', 'description' => '着信の 出かたが かわっても、落ち着いて 応答・拒否が できるようになりました', 'condition' => ['level' => 'hard', 'min_score' => 4, 'times' => 1]],
+            ],
+        ],
+        'phone_hangup' => [
+            'label' => '電話を切る',
+            'practice_label' => '電話を切る練習',
+            'titles' => [
+                // 「やさしい」で 3回続けて「通話終了」を押せたら獲得
+                'beginner' => ['name' => '電話を切る初級', 'description' => 'お話が おわったら 電話を 切れるようになりました', 'condition' => ['level' => 'easy', 'min_score' => 3, 'times' => 1]],
+                // 「むずかしい」で 10回中9回以上できたら獲得
+                'advanced' => ['name' => '電話を切る上達', 'description' => 'ほかの ボタンと まちがえずに 電話を 切れるようになりました', 'condition' => ['level' => 'hard', 'min_score' => 9, 'times' => 1]],
             ],
         ],
     ],

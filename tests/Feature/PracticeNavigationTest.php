@@ -196,15 +196,11 @@ class PracticeNavigationTest extends TestCase
         $this->get('/practice/play/unknown/normal')->assertNotFound();
     }
 
-    /** 後日実装する項目には遷移先を設定していないこと */
-    public function test_unimplemented_items_have_no_link(): void
+    /** 電話の練習は、電話の練習詳細画面へ進むこと */
+    public function test_phone_practice_links_to_phone_details(): void
     {
-        // 電話の練習のみ、後日実装のため遷移させずボタンのままとする
-        $this->assertStringContainsString(
-            '<button type="button" class="btn btn--primary">電話の練習をする</button>',
-            $this->pageSource('Menu/Contents'),
-            '電話の練習をする は遷移させずボタンのみとする'
-        );
+        $this->assertPageLinksTo('Menu/Contents', route('practice.phone.details'));
+        $this->assertStringContainsString('電話の練習をする', $this->pageSource('Menu/Contents'));
     }
 
     /** メニュー画面の「前の画面に戻る」は、トップ画面（ログイン後）へ戻ること */

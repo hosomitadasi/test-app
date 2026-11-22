@@ -11,8 +11,7 @@ import DefaultLayout from '@/Layouts/DefaultLayout.vue';
                 <Link class="btn btn--quiet" href="/menu">練習を選び直す</Link>
                 <Link class="btn btn--primary" href="/practice/details">画面操作の練習をする</Link>
                 <Link class="btn btn--primary" href="/practice/typing/details">文字入力の練習をする</Link>
-                <!-- 電話の練習は後日実装するため、遷移は設定しない -->
-                <button type="button" class="btn btn--primary">電話の練習をする</button>
+                <Link class="btn btn--primary" href="/practice/phone/details">電話の練習をする</Link>
             </div>
         </section>
     </DefaultLayout>

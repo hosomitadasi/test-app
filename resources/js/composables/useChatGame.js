@@ -7,8 +7,11 @@
    - 中断中は、相手の返事を待つ時間も止める
    - 他のアプリに切り替えたら自動で中断する
    - やり終えたら onFinish(得点) を呼ぶ（結果の記録に使う）
+   - 1回の練習の中では、一度出した質問を練習が終わるまで出さない
+     （用意した質問を出し尽くしたら、そこで最後のあいさつをして終える）
    ========================================================================== */
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { createQuestionDeck } from './questionDeck';
 
 /** 答えの文字の種類ごとの、確かめ方と、合っていないときの声かけ */
 const FORMATS = {
@@ -22,7 +25,7 @@ export function useChatGame(CONFIG, { onFinish } = {}) {
     const REQUIRED_COUNT = CONFIG.requiredCount || 0;
     const SCORE_DIGITS = CONFIG.scoreDigits || 3;
     const MAX_SCORE = Math.pow(10, SCORE_DIGITS) - 1;          // 3桁 = 999点まで
-    const QUESTIONS = Array.isArray(CONFIG.questions) ? CONFIG.questions : [];
+    const deck = createQuestionDeck(CONFIG.questions);           // 1回の練習で同じ質問を出さないための山札
     const REPLIES = Array.isArray(CONFIG.replies) && CONFIG.replies.length > 0 ? CONFIG.replies : ['そうなんですね！'];
 
     const GUARD_MS = 700;            // 画面が変わった直後、指が残っていても誤って押させない時間
@@ -47,7 +50,6 @@ export function useChatGame(CONFIG, { onFinish } = {}) {
 
     // ---------- 内部の状態 ----------
     let current = null;              // 今答えてもらっている質問
-    let questionIndex = 0;           // 次に出す質問。「もう一度」では続きの質問から出す
     let messageId = 0;
     let replyIndex = 0;
     let pendingStep = null;          // 相手の次の発言など、時間をおいて行う処理
@@ -137,10 +139,16 @@ export function useChatGame(CONFIG, { onFinish } = {}) {
     }
 
     function askQuestion() {
-        if (QUESTIONS.length === 0) { return; }
+        if (deck.size === 0) { return; }
 
-        current = QUESTIONS[questionIndex % QUESTIONS.length];
-        questionIndex += 1;
+        const next = deck.next();
+        if (next === null) {
+            // この練習で出せる質問をすべて出し終えたので、同じ質問をくり返さずに終える
+            current = null;
+            partnerSay(CONFIG.closing, () => schedule(finishPractice, FINISH_DELAY_MS));
+            return;
+        }
+        current = next;
 
         partnerSay(current.text, () => {
             canAnswer.value = true;
@@ -231,6 +239,7 @@ export function useChatGame(CONFIG, { onFinish } = {}) {
         draft.value = '';
         notice.value = '';
         current = null;
+        deck.reset();            // 新しい練習では、すべての質問を並べ替えて出し直せるようにする
         releaseWakeLock();
     }
 

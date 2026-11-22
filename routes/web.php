@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ChatPracticeController;
 use App\Http\Controllers\GrowthController;
+use App\Http\Controllers\PhonePracticeController;
 use App\Http\Controllers\PracticeController;
 use App\Http\Controllers\PracticeRecordController;
 use App\Http\Controllers\TopController;
@@ -94,6 +95,22 @@ Route::middleware('auth')->group(function () {
                     ->whereIn('level', ChatPracticeController::LEVELS)
                     ->name('play');
             });
+        });
+
+        // 電話の練習。アプリの中に作った着信画面・通話中画面で、電話を取る・切る操作を練習する。
+        // （contents → details → difficulty → play。詳細画面で「電話を取る」か「電話を切る」を選ぶ）
+        Route::prefix('phone')->name('phone.')->group(function () {
+            Route::get('/details', [PhonePracticeController::class, 'details'])
+                ->name('details');
+
+            Route::get('/difficulty/{type}', [PhonePracticeController::class, 'difficulty'])
+                ->whereIn('type', PhonePracticeController::PRACTICE_TYPES)
+                ->name('difficulty');
+
+            Route::get('/play/{type}/{level}', [PhonePracticeController::class, 'play'])
+                ->whereIn('type', PhonePracticeController::PRACTICE_TYPES)
+                ->whereIn('level', PhonePracticeController::LEVELS)
+                ->name('play');
         });
     });
 

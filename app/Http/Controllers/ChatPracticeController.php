@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Question;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,6 +15,7 @@ use Inertia\Response;
  * 文字打ち練習と同じく通信を伴わないクライアント完結型のため、
  * ここでは質問と難易度ごとの設定値の受け渡しのみを担当する。
  * 利用者が入力した答えはサーバーへ送らず、記録には得点だけを残す。
+ * 質問は questions テーブル（practice_type = chat）に保存している。
  */
 class ChatPracticeController extends Controller
 {
@@ -34,54 +36,12 @@ class ChatPracticeController extends Controller
      *
      * 住所・電話番号・口座番号などの個人情報や、合い言葉（秘密の質問）に使われやすい事柄を
      * 聞き出す練習にならないよう、これらを含む質問は出題しない。
-     * 質問を足すときは、ここに当たらないものにする。
+     * questions テーブルに質問を足すときは、ここに当たらないものにする（当たるものは画面に出さない）。
      */
     public const FORBIDDEN_WORDS = [
         '住所', '住んで', '電話', '番号', '口座', '銀行', '暗証', 'パスワード', 'カード',
         'メール', '名前', '誕生日', '生年月日', '年齢', '何歳', '出身', '学校', '勤め', '会社',
         '家族', '旧姓', '病気', '保険', 'お金', '収入',
-    ];
-
-    /**
-     * 「やさしい」「ふつう」で出す質問。身近な好みを聞くもので、どんな答えでもよい。
-     */
-    private const QUESTIONS = [
-        '好きな動物は何ですか？',
-        '好きな果物は何ですか？',
-        '好きな花は何ですか？',
-        '好きな食べ物は何ですか？',
-        '好きな飲み物は何ですか？',
-        '好きな季節はいつですか？',
-        '好きな色は何色ですか？',
-        '好きな野菜は何ですか？',
-        '好きなお菓子は何ですか？',
-        '好きな乗り物は何ですか？',
-        '朝ごはんによく食べるものは何ですか？',
-        '好きな天気はどんな天気ですか？',
-        '好きなスポーツは何ですか？',
-        '好きなおかずは何ですか？',
-        '好きな麺類は何ですか？',
-    ];
-
-    /**
-     * 「むずかしい」で出す質問。答えを、指定した文字に変換して入力してもらう。
-     *
-     * [質問, 変換のしかた] の形で持つ。変換のしかたは katakana（カタカナ）・kanji（漢字）の2種類。
-     * 漢字は、答えが漢字で書ける言葉になりやすい質問にだけ使う。
-     */
-    private const CONVERSION_QUESTIONS = [
-        ['嫌いな果物は何ですか？', 'katakana'],
-        ['好きな果物は何ですか？', 'katakana'],
-        ['好きな動物は何ですか？', 'katakana'],
-        ['好きな飲み物は何ですか？', 'katakana'],
-        ['好きなスポーツは何ですか？', 'katakana'],
-        ['好きな野菜は何ですか？', 'katakana'],
-        ['好きなお菓子は何ですか？', 'katakana'],
-        ['好きな乗り物は何ですか？', 'katakana'],
-        ['好きな季節はいつですか？', 'kanji'],
-        ['好きな色は何色ですか？', 'kanji'],
-        ['好きな曜日は何曜日ですか？', 'kanji'],
-        ['好きな天気はどんな天気ですか？', 'kanji'],
     ];
 
     /** 変換のしかたごとに、質問のあとに添える頼み方 */
@@ -168,31 +128,36 @@ class ChatPracticeController extends Controller
     /**
      * 難易度ごとの質問の一覧を作る。
      *
+     * questions テーブルから、その難易度で使う質問を重ならないように取り出し、
      * 毎回同じ順番にならないよう並べ替えたうえで、すべての質問を返す。
-     * 画面側は「もう一度」のたびに続きの質問から必要な数だけ使う。
+     * 画面側は1回の練習の中で同じ質問を2度出さない。
      * 1問ごとの内容は
+     *   id     … 質問の番号（同じ質問を出していないかの確かめに使う）
      *   text   … 相手の吹き出しに出す質問
      *   format … 答えの文字の種類（katakana / kanji。「むずかしい」以外は空）
      * とする。
      */
     private function questionsFor(string $level): array
     {
-        if (self::LEVEL_SETTINGS[$level]['is_conversion']) {
-            $questions = array_map(static fn (array $question) => [
-                'text' => $question[0].'　'.self::CONVERSION_REQUESTS[$question[1]],
-                'format' => $question[1],
-            ], self::CONVERSION_QUESTIONS);
-        } else {
-            $questions = array_map(static fn (string $text) => [
-                'text' => $text,
-                'format' => '',
-            ], self::QUESTIONS);
-        }
+        $isConversion = self::LEVEL_SETTINGS[$level]['is_conversion'];
 
-        $questions = array_values(array_filter($questions, fn (array $question) => !$this->asksPersonalInfo($question['text'])));
-        shuffle($questions);
-
-        return $questions;
+        return Question::forPractice(Question::TYPE_CHAT, $isConversion)
+            ->inRandomOrder()
+            ->get(['id', 'text', 'answer_format'])
+            // 頼み方の分からない文字の種類が登録されていたら、その質問は出さない
+            ->filter(fn (Question $question) => !$isConversion || isset(self::CONVERSION_REQUESTS[$question->answer_format]))
+            // 個人情報などを聞き出す質問は、登録されていても出さない
+            ->reject(fn (Question $question) => $this->asksPersonalInfo($question->text))
+            ->unique('text')
+            ->map(fn (Question $question) => [
+                'id' => $question->id,
+                'text' => $isConversion
+                    ? $question->text.'　'.self::CONVERSION_REQUESTS[$question->answer_format]
+                    : $question->text,
+                'format' => $isConversion ? $question->answer_format : '',
+            ])
+            ->values()
+            ->all();
     }
 
     /** 個人情報などを聞き出す質問になっていないか */
